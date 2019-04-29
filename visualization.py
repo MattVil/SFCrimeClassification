@@ -5,7 +5,7 @@ import pylab
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from data import load_data, data_preprocessing
+from data import load_data, data_preprocessing, DATA_PATH
 
 def plot_category_distrib(data):
     """"""
@@ -17,6 +17,18 @@ def plot_category_distrib(data):
     plt.title('Crime Category distribution')
     plt.ylabel('Number of Occurrences', fontsize=12)
     plt.xlabel('Crime Category', fontsize=12)
+    plt.show()
+
+def plot_resolution_distrib(data):
+    """"""
+    distrib = data.Resolution.value_counts()
+    print(distrib)
+    plt.figure(figsize=(10,5))
+    sns.barplot(distrib.index, distrib.values, alpha=0.8)
+    plt.xticks(rotation=90)
+    plt.title('Crime Resolution distribution')
+    plt.ylabel('Number of Occurrences', fontsize=12)
+    plt.xlabel('Resolution', fontsize=12)
     plt.show()
 
 def plot_PdDistrict_distrib(data):
@@ -200,6 +212,38 @@ def plot_year_distribution(data):
     plt.show()
 
 
+def plot_maps(data):
+    mapdata = np.loadtxt(DATA_PATH + "/sf_map.txt")
+    asp = mapdata.shape[0] * 1.0 / mapdata.shape[1]
+
+    lon_lat_box = (-122.5247, -122.3366, 37.699, 37.8299)
+    clipsize = [[-122.5247, -122.3366],[ 37.699, 37.8299]]
+
+    #Get rid of the bad lat/longs
+    data['Xok'] = data[data.X<-121].X
+    data['Yok'] = data[data.Y<40].Y
+    data = data.dropna()
+    data = data[1:300000] #Can't use all the data and complete within 600 sec :(
+
+    g= sns.FacetGrid(data, col="Category", col_wrap=6, size=5, aspect=1/asp)
+
+    for ax in g.axes:
+        ax.imshow(mapdata, cmap=plt.get_cmap('gray'),
+                  extent=lon_lat_box,
+                  aspect=asp)
+    g.map(sns.kdeplot, "Xok", "Yok", clip=clipsize)
+
+    plt.savefig('./visualization/category_density_plot.png')
+    plt.show()
+
+    # #Do a larger plot with prostitution only
+    # plt.figure(figsize=(20,20*asp))
+    # ax = sns.kdeplot(trainP.Xok, trainP.Yok, clip=clipsize, aspect=1/asp)
+    # ax.imshow(mapdata, cmap=plt.get_cmap('gray'),
+    #               extent=lon_lat_box,
+    #               aspect=asp)
+    # # plt.savefig('prostitution_density_plot.png')
+
 def main():
     train, test = load_data()
     # print(list(train))
@@ -208,7 +252,10 @@ def main():
     # plot_dayTime_distrib(train)
     # plot_top9_dayTime_distrib(train)
     # plot_full_crime_evolution(train)
-    plot_year_distribution(train)
+    # plot_year_distribution(train)
+    # plot_maps(train)
+    plot_resolution_distrib(train)
+    print(train.Resolution.unique())
 
 if __name__ == '__main__':
     main()
